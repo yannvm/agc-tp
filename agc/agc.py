@@ -55,7 +55,7 @@ def get_arguments():
     parser = argparse.ArgumentParser(description=__doc__, usage=
                                      "{0} -h"
                                      .format(sys.argv[0]))
-    parser.add_argument('-i', '-amplicon_file', dest='amplicon_file', type=isfile, required=True, 
+    parser.add_argument('-i', '-amplicon_file', dest='amplicon_file', type=isfile, required=True,
                         help="Amplicon is a compressed fasta file (.fasta.gz)")
     parser.add_argument('-s', '-minseqlen', dest='minseqlen', type=int, default = 400,
                         help="Minimum sequence length for dereplication")
@@ -83,7 +83,7 @@ def read_fasta(amplicon_file, minseqlen):
     -----
     Generator yielding Fasta reads
     """
-    if amplicon_file.endswith("gz"): 
+    if amplicon_file.endswith("gz"):
         with gzip.open(amplicon_file, "rb") as f_in:
             seq = b""
             for line in f_in:
@@ -109,11 +109,12 @@ def read_fasta(amplicon_file, minseqlen):
 
 
 def dereplication_fulllength(amplicon_file, minseqlen, mincount):
+    """ Good Dockstring """
     gen_fasta = read_fasta(amplicon_file, minseqlen)
-    
+
     seq_count = Counter()
     for seq in gen_fasta:
-            seq_count[seq] += 1
+        seq_count[seq] += 1
 
     for count in seq_count.most_common():
         if count[1] >= mincount:
@@ -121,6 +122,7 @@ def dereplication_fulllength(amplicon_file, minseqlen, mincount):
 
 
 def get_chunks(sequence, chunk_size):
+    """ Good Dockstring """
     list_chunk = []
     for i in range(0, len(sequence), chunk_size):
         chunk = sequence[i:i+chunk_size]
@@ -131,10 +133,12 @@ def get_chunks(sequence, chunk_size):
 
 
 def get_unique(ids):
+    """ Good Dockstring """
     return {}.fromkeys(ids).keys()
 
 
-def common(lst1, lst2): 
+def common(lst1, lst2):
+    """ Good Dockstring """
     return list(set(lst1) & set(lst2))
 
 
@@ -155,6 +159,7 @@ def cut_kmer(sequence, kmer_size):
 
 
 def get_unique_kmer(kmer_dict, sequence, id_seq, kmer_size):
+    """ Good Dockstring """
     gen_kmer = cut_kmer(sequence, kmer_size)
 
     for kmer in gen_kmer:
@@ -167,12 +172,15 @@ def get_unique_kmer(kmer_dict, sequence, id_seq, kmer_size):
 
 
 def search_mates(kmer_dict, sequence, kmer_size):
-    return [i[0] for i in Counter([ids for kmer in cut_kmer(sequence, kmer_size) if kmer in kmer_dict for ids in kmer_dict[kmer]]).most_common(8)]
+    """ Good Dockstring """
+    return [i[0] for i in Counter([ids for kmer in cut_kmer(sequence, kmer_size)
+        if kmer in kmer_dict for ids in kmer_dict[kmer]]).most_common(8)]
 
 
 def get_identity(alignment_list):
+    """ Good Dockstring """
     nb_same = 0
-    
+
     for i in range(len(alignment_list[0])):
         if alignment_list[0][i] == alignment_list[1][i]:
             nb_same += 1
@@ -181,6 +189,7 @@ def get_identity(alignment_list):
 
 
 def detect_chimera(perc_identity_matrix):
+    """ Good Dockstring """
     list_std = []
     bool_seq0 = False
     bool_seq1 = False
@@ -191,59 +200,84 @@ def detect_chimera(perc_identity_matrix):
             bool_seq0 = True
         if liste[0] < liste[1]:
             bool_seq1 = True
-                    
-    if statistics.mean(list_std) > 5 and bool_seq0 and bool_seq1:
-        return True
-    else:
-        return False
+
+    return bool(statistics.mean(list_std) > 5 and bool_seq0 and bool_seq1)
+
 
 
 def chimera_removal(amplicon_file, minseqlen, mincount, chunk_size, kmer_size):
+    """ Good Dockstring """
 
     list_nonchim = []
     kmer_dict = {}
     chimera = False
+    id_kmer = 0
 
     for i, sequence in enumerate(dereplication_fulllength(amplicon_file, minseqlen, mincount)):
-        
+
         if i%100 == 0:
             print(i)
 
 
         chunk_list = get_chunks(sequence[0], chunk_size)
-        
+
         mates_list = []
         for chunk in chunk_list:
             mates_list.append(search_mates(kmer_dict, chunk, kmer_size))
 
         common_list = []
-        for i in range(len(mates_list)):
-            common_list = common(common_list, mates_list[i])
+        for j in range(len(mates_list)):
+            common_list = common(common_list, mates_list[j])
 
 
         if len(common_list) > 1:
             for c in common_list[0:2]:
                 chunk_ref = get_chunks(list_nonchim[c], chunk_size)
-                
+
                 identity_matrix = [[]*4]
-                for i in range(len(chunk_list)):
-                    align = nw.global_align(chunk_list[i], chunk_ref[i], gap_open=-1, gap_extend=-1, matrix="MATCH")
-                    identity_matrix[i].append(get_identity(align))
-                    
-            chimera = detect_chimera(perc_identity_matrix)
+                for k in range(len(chunk_list)):
+                    align = nw.global_align(chunk_list[k], chunk_ref[k],
+                        gap_open=-1, gap_extend=-1, matrix="agc/MATCH")
+                    identity_matrix[k].append(get_identity(align))
+
+            chimera = detect_chimera(identity_matrix)
 
         if not chimera:
-            kmer_dict = get_unique_kmer(kmer_dict, sequence[0], i, kmer_size)
+            kmer_dict = get_unique_kmer(kmer_dict, sequence[0], id_kmer, kmer_size)
             list_nonchim.append(sequence[0])
+            id_kmer += 1
             yield sequence
 
-
+"""
 def abundance_greedy_clustering(amplicon_file, minseqlen, mincount, chunk_size, kmer_size):
     OTU = []
     for sequence in chimera_removal(amplicon_file, minseqlen, mincount, chunk_size, kmer_size):
         OTU.append(sequence)
 
     return OTU
+"""
+
+def abundance_greedy_clustering(amplicon_file, minseqlen, mincount, chunk_size, kmer_size):
+    """ Good Dockstring """
+    gen_chimerar_rem = chimera_removal(amplicon_file, minseqlen, mincount, chunk_size, kmer_size)
+
+    OTU = [next(gen_chimerar_rem)]
+
+    for sequence in gen_chimerar_rem:
+        bool_id = True
+        for i in range(len(OTU)):
+            align = nw.global_align(OTU[i][0], sequence[0],
+                gap_open=-1, gap_extend=-1, matrix="agc/MATCH")
+            if get_identity(align) < 97:
+                bool_id = False
+                break
+
+        if bool_id:
+            OTU.append(sequence)
+
+    return OTU
+
+
 
 
 def fill(text, width=80):
@@ -252,6 +286,7 @@ def fill(text, width=80):
 
 
 def write_OTU(OTU_list, output_file):
+    """ Good Dockstring """
     with open(output_file, "wt") as f_out:
         for i, OTU in enumerate(OTU_list):
             f_out.write(f">OTU_{i+1} occurrence:{OTU[1]}\n")
@@ -264,7 +299,8 @@ def main():
     """
     # Get arguments
     args = get_arguments()
-    OTU_list = abundance_greedy_clustering(args.amplicon_file, args.minseqlen, args.mincount, args.chunk_size, args.kmer_size)
+    OTU_list = abundance_greedy_clustering(args.amplicon_file, args.minseqlen,
+        args.mincount, args.chunk_size, args.kmer_size)
     write_OTU(OTU_list, args.output_file)
 
 if __name__ == '__main__':
