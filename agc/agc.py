@@ -278,19 +278,11 @@ def fill(text, width=80):
     return os.linesep.join(text[i:i+width] for i in range(0, len(text), width))
 
 
-
 def write_OTU(OTU_list, output_file):
-    with open(output_file, "w") as f_out:
+    with open(output_file, "wt") as f_out:
         for i, OTU in enumerate(OTU_list):
-            f_out.write(f">OTU_{i+1} occurence: {OTU[1]}\n")
+            f_out.write(f">OTU_{i+1} occurrence:{OTU[1]}\n")
             f_out.write(f"{fill(OTU[0])}\n")
-
-
-def write_OTU(OTU_list, output_file):
-    with gzip.open(output_file, "wb") as f_out:
-        for i, OTU in enumerate(OTU_list):
-            f_out.write(f">OTU_{i+1} occurence: {OTU[1]}\n".encode())
-            f_out.write(f"{fill(OTU[0])}\n".encode())
 
 
 def main():
