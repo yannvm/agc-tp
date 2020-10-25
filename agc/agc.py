@@ -197,38 +197,6 @@ def detect_chimera(perc_identity_matrix):
     else:
         return False
 
-"""
-def chimera_removal(amplicon_file, minseqlen, mincount, chunk_size, kmer_size):
-
-    list_nonchim = []
-    kmer_dict = {}
-
-    for i, sequence in enumerate(dereplication_fulllength(amplicon_file, minseqlen, mincount)):
-        list_chunks = get_chunks(sequence[0], chunk_size)
-
-        list_mates = []
-        for chunk in list_chunks:
-            list_mates.append(search_mates(kmer_dict, sequence, kmer_size))
-
-        list_common = []
-        for i in range(len(list_mates)-1):
-            list_common.append(common(list_mates[i], list_mates[i+1]))
-
-        if len(list_common) > 1:
-            for e in list_common[0:2]:
-                chunk_ref = get_chunks(list_nonchim[e], chunk_size)
-                perc_identity_matrix = [[]*4]
-                for i in range(len(chunk_ref)):
-                    align = nw.global_align(chunk_ref[i], chunk[i])
-                    perc_identity_matrix[i].append(get_identity(alignment_list))
-        chimera = detect_chimera(perc_identity_matrix)
-
-        if not chimera:
-            kmer_dict = get_unique_kmer(kmer_dict, sequence, i, kmer_size)
-            list_nonchim.append(sequence)
-"""
-
-
 
 def chimera_removal(amplicon_file, minseqlen, mincount, chunk_size, kmer_size):
 
