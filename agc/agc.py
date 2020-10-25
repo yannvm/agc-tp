@@ -248,14 +248,6 @@ def chimera_removal(amplicon_file, minseqlen, mincount, chunk_size, kmer_size):
             id_kmer += 1
             yield sequence
 
-"""
-def abundance_greedy_clustering(amplicon_file, minseqlen, mincount, chunk_size, kmer_size):
-    OTU = []
-    for sequence in chimera_removal(amplicon_file, minseqlen, mincount, chunk_size, kmer_size):
-        OTU.append(sequence)
-
-    return OTU
-"""
 
 def abundance_greedy_clustering(amplicon_file, minseqlen, mincount, chunk_size, kmer_size):
     """ Good Dockstring """
@@ -265,7 +257,7 @@ def abundance_greedy_clustering(amplicon_file, minseqlen, mincount, chunk_size, 
 
     for sequence in gen_chimerar_rem:
         bool_id = True
-        for i in range(len(OTU)):
+        for i in range(1, len(OTU)):
             align = nw.global_align(OTU[i][0], sequence[0],
                 gap_open=-1, gap_extend=-1, matrix="agc/MATCH")
             if get_identity(align) < 97:
