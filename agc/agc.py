@@ -205,31 +205,36 @@ def chimera_removal(amplicon_file, minseqlen, mincount, chunk_size, kmer_size):
     chimera = False
 
     for i, sequence in enumerate(dereplication_fulllength(amplicon_file, minseqlen, mincount)):
+        
+        if i%100 == 0:
+            print(i)
+
 
         chunk_list = get_chunks(sequence[0], chunk_size)
         
-        chunk_match_all = []
+        mates_list = []
         for chunk in chunk_list:
-            chunk_match_all.append(search_mates(kmer_dict, chunk, kmer_size))
+            mates_list.append(search_mates(kmer_dict, chunk, kmer_size))
 
-        e = []
-        for i in range(len(chunk_match_all)):
-            e = common(e, chunk_match_all[i])
+        common_list = []
+        for i in range(len(mates_list)):
+            common_list = common(common_list, mates_list[i])
 
 
-        if len(e) > 1:
-            for m in e[0:2]:
-                chunk_ref = get_chunks(list_nonchim[m], chunk_size)
+        if len(common_list) > 1:
+            for c in common_list[0:2]:
+                chunk_ref = get_chunks(list_nonchim[c], chunk_size)
                 
-                perc_identity_matrix = [[]*4]
+                identity_matrix = [[]*4]
                 for i in range(len(chunk_list)):
-                    align = nw.global_align(chunk_ref[i], chunk_list[i])
-                    perc_identity_matrix[i].append(get_identity(align))
+                    align = nw.global_align(chunk_list[i], chunk_ref[i], gap_open=-1, gap_extend=-1, matrix="MATCH")
+                    identity_matrix[i].append(get_identity(align))
                     
             chimera = detect_chimera(perc_identity_matrix)
 
         if not chimera:
             kmer_dict = get_unique_kmer(kmer_dict, sequence[0], i, kmer_size)
+            list_nonchim.append(sequence[0])
             yield sequence
 
 
@@ -259,7 +264,8 @@ def main():
     """
     # Get arguments
     args = get_arguments()
-
+    OTU_list = abundance_greedy_clustering(args.amplicon_file, args.minseqlen, args.mincount, args.chunk_size, args.kmer_size)
+    write_OTU(OTU_list, args.output_file)
 
 if __name__ == '__main__':
     main()
